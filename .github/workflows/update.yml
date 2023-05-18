@@ -1,0 +1,58 @@
+name: Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * SUN' # every sunday
+
+jobs:
+  update:
+    name: Pull in latest call-flake from nixos/nix
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Procure Nix
+      uses: nixbuild/nix-quick-install-action@v22
+      with:
+        nix_conf: |
+          experimental-features = nix-command flakes
+
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: main
+        path: call-flake
+    
+    - name: Checkout nixpkgs repo
+      uses: actions/checkout@v2
+      with:
+        ref: master
+        repository: NixOS/nix
+        path: nix
+        fetch-depth: 0 # complete history
+
+    - name: Procure git-filter-repo from nixpkgs
+      run: "nix profile install nixpkgs#git-filter-repo"
+
+
+    - name: Filter nixos/nix on ./src/libexpr/flake/call-flake.nix
+      run: |
+        cd ./nix
+        git filter-repo --path src/libexpr/flake/call-flake.nix --path-rename src/libexpr/flake/: --force
+
+    - name: Update call-flake
+      run: |
+        cd ./call-flake
+        git remote add other ../nix/
+        git fetch other master
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git merge -X theirs --allow-unrelated-histories other/master
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        directory: call-flake
+        branch: main
+
