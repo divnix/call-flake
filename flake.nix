@@ -12,9 +12,17 @@
          if builtins.isAttrs ref
          then builtins.removeAttrs ref ["dir"]
          else ref;
+        defaultLock = builtins.toJSON {
+          nodes.root = {};
+          root = "root";
+        };
+        readOrDefault = path:
+          if builtins.pathExists path
+          then builtins.readFile path
+          else defaultLock;
       in
         if dir == ""
-        then callFlake (builtins.readFile "${src}/flake.lock") src dir
-        else callFlake (builtins.readFile "${src}/${dir}/flake.lock") src dir;
+        then callFlake (readOrDefault "${src}/flake.lock") src dir
+        else callFlake (readOrDefault "${src}/${dir}/flake.lock") src dir;
   };
 }
