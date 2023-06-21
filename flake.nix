@@ -8,13 +8,13 @@
       # if expressed as attribute set, a dir argument may be added to point to a subref
       dir = ref.dir or "";
       src =
-        if builtins.isPath ref'
-        then {outPath = ref';}
-        else builtins.fetchTree ref';
-      ref' =
-        if builtins.isAttrs ref
-        then builtins.removeAttrs ref ["dir"]
-        else ref;
+        if builtins.isPath ref || builtins.isString ref
+        then {outPath = ref;}
+        else builtins.fetchTree (
+          if builtins.isAttrs ref
+          then builtins.removeAttrs ref ["dir"]
+          else ref
+        );
       lockstr = let
         rootlock = "${src}/flake.lock";
         sublock = "${src}/${dir}/flake.lock";
