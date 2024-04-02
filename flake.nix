@@ -29,6 +29,6 @@
             root = "root";
           };
     in
-      callFlake lockstr src dir;
+      callFlake lockstr { root = { sourceInfo = src; subdir = dir; }; };
   };
 }
